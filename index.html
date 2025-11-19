@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Portal Informasi Sekolah</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .sidebar-link.active {
+            background-color: #4f46e5; /* indigo-700 */
+            color: white;
+        }
+        .sidebar-link.active svg {
+            color: white;
+        }
+        /* Role-based visibility classes */
+        .admin-only, .teacher-only, .student-only { display: none; }
+        
+        body.admin-view .admin-only { display: block; }
+        body.teacher-view .teacher-only { display: block; }
+        body.student-view .student-only { display: block; }
+        
+        /* Special case for links that are for admin OR teacher */
+        body.admin-view .admin-teacher-only,
+        body.teacher-view .admin-teacher-only {
+            display: flex;
+        }
+        
+        .task-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        body:not(.student-view) .student-profile-info {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <!-- Login View -->
+    <div id="login-view" class="flex items-center justify-center min-h-screen bg-gray-200">
+        <div class="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-lg">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-gray-800">SMAN 1 DRAMAGA</h1>
+                <p class="text-gray-500 mt-2">Selamat datang di Portal Informasi Sekolah</p>
+            </div>
+            
+            <div class="flex justify-center border-b">
+                <button data-role="admin" class="role-tab px-6 py-2 font-semibold border-b-2 border-indigo-600 text-indigo-600">Admin</button>
+                <button data-role="teacher" class="role-tab px-6 py-2 font-semibold text-gray-500">Guru</button>
+                <button data-role="student" class="role-tab px-6 py-2 font-semibold text-gray-500">Siswa</button>
+            </div>
+
+            <form id="login-form" class="space-y-4">
+                <input type="hidden" id="login-role" value="admin">
+                <div>
+                    <label for="login-name" class="text-sm font-medium text-gray-700">Nama Pengguna</label>
+                    <input type="text" id="login-name" class="w-full px-4 py-2 mt-1 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Masukkan nama Anda" required>
+                </div>
+                <div>
+                    <label for="login-password" class="text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="login-password" class="w-full px-4 py-2 mt-1 border rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="w-full py-3 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 font-semibold">Masuk</button>
+            </form>
+            <p id="login-error" class="text-sm text-center text-red-500 h-4"></p>
+        </div>
+    </div>
+
+    <!-- Main Portal View -->
+    <div id="main-portal" class="flex h-screen bg-gray-200 hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 flex-shrink-0 hidden sm:block bg-gray-800 text-white">
+            <div class="p-6 text-2xl font-bold border-b border-gray-700">
+                SMAN 1 DRAMAGA
+            </div>
+            <nav class="p-4 space-y-2">
+                <a href="#dashboard" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-700 transition active">
+                    <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+                <a href="#tugas" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-700 transition">
+                    <i data-lucide="clipboard-list"></i> Tugas & Nilai
+                </a>
+                 <a href="#absensi" class="sidebar-link admin-teacher-only items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-700 transition" style="display: none;">
+                    <i data-lucide="calendar-check"></i> Absensi Siswa
+                </a>
+                <a href="#informasi" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-700 transition">
+                    <i data-lucide="megaphone"></i> Informasi Sekolah
+                </a>
+                <a href="#materi" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-700 transition">
+                    <i data-lucide="folder-kanban"></i> Materi Belajar
+                </a>
+                <a href="#jadwal" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-700 transition">
+                    <i data-lucide="calendar-days"></i> Jadwal Pelajaran
+                </a>
+                <a href="#profil" class="sidebar-link flex items-center gap-3 px-4 py-2.5 rounded-lg hover:bg-gray-700 transition">
+                    <i data-lucide="user-circle"></i> Profil Pengguna
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-md p-4 flex justify-between items-center z-10">
+                <h1 id="page-title" class="text-2xl font-bold text-gray-800">Dashboard</h1>
+                <div class="flex items-center gap-4">
+                    <!-- Logout Button -->
+                    <button id="logout-btn" class="text-sm bg-red-600 text-white font-semibold py-2 px-4 rounded-full hover:bg-red-700 transition flex items-center gap-2">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+                    </button>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+                <!-- Dashboard -->
+                <section id="page-dashboard" class="page-content">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Selamat Datang, <span id="welcome-user-name">Pengguna</span>!</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Siswa -->
+                        <div class="student-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-blue-100 text-blue-600 p-3 rounded-full"><i data-lucide="clipboard-list"></i></div><div><p class="text-gray-500 text-sm">Tugas Aktif</p><p class="text-2xl font-bold">1</p></div></div>
+                        <div class="student-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-green-100 text-green-600 p-3 rounded-full"><i data-lucide="user-check"></i></div><div><p class="text-gray-500 text-sm">Izin</p><p class="text-2xl font-bold">2</p></div></div>
+                        <div class="student-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-yellow-100 text-yellow-600 p-3 rounded-full"><i data-lucide="thermometer"></i></div><div><p class="text-gray-500 text-sm">Sakit</p><p class="text-2xl font-bold">5</p></div></div>
+                        <div class="student-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-red-100 text-red-600 p-3 rounded-full"><i data-lucide="user-x"></i></div><div><p class="text-gray-500 text-sm">Alpa</p><p class="text-2xl font-bold">0</p></div></div>
+                        <!-- Guru -->
+                        <div class="teacher-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-indigo-100 text-indigo-600 p-3 rounded-full"><i data-lucide="users"></i></div><div><p class="text-gray-500 text-sm">Kelas Diajar</p><p class="text-2xl font-bold">5</p></div></div>
+                        <div class="teacher-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-red-100 text-red-600 p-3 rounded-full"><i data-lucide="file-warning"></i></div><div><p class="text-gray-500 text-sm">Tugas Belum Dinilai</p><p class="text-2xl font-bold">12</p></div></div>
+                        <!-- Admin -->
+                        <div class="admin-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-indigo-100 text-indigo-600 p-3 rounded-full"><i data-lucide="users"></i></div><div><p class="text-gray-500 text-sm">Total Siswa</p><p class="text-2xl font-bold">320</p></div></div>
+                        <div class="admin-only bg-white p-6 rounded-lg shadow-md flex items-center gap-4"><div class="bg-green-100 text-green-600 p-3 rounded-full"><i data-lucide="user-check"></i></div><div><p class="text-gray-500 text-sm">Total Guru</p><p class="text-2xl font-bold">25</p></div></div>
+                    </div>
+                </section>
+
+                <!-- Tugas & Nilai -->
+                <section id="page-tugas" class="page-content hidden">
+                    <div class="admin-teacher-only bg-white rounded-lg shadow-md p-6 mb-6" style="display: none;">
+                        <h2 class="text-xl font-semibold mb-4">Tambah Tugas Baru</h2>
+                        <form id="add-task-form" class="flex flex-col sm:flex-row gap-4">
+                            <input type="text" id="task-input" placeholder="Masukkan nama tugas..." class="flex-grow p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                            <button type="submit" class="bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700 shadow-sm">Tambah</button>
+                        </form>
+                    </div>
+                    <div id="loading-indicator" class="text-center py-8"><p class="text-gray-500">Memuat data tugas...</p></div>
+                    <div id="tasks-container" class="space-y-6 hidden">
+                        <div class="student-only">
+                            <h2 class="text-xl font-semibold mb-4 border-b pb-2">Tugas yang Harus Dikerjakan</h2><div id="active-tasks-list" class="space-y-3"></div><p id="no-active-tasks" class="text-gray-500 mt-4 hidden">Belum ada tugas aktif.</p>
+                            <h2 class="text-xl font-semibold mt-6 mb-4 border-b pb-2">Tugas Selesai</h2><div id="completed-tasks-list" class="space-y-3"></div><p id="no-completed-tasks" class="text-gray-500 mt-4 hidden">Belum ada tugas selesai.</p>
+                        </div>
+                        <div class="admin-teacher-only" style="display: none;">
+                             <h2 class="text-xl font-semibold mb-4 border-b pb-2">Manajemen Tugas & Penilaian</h2>
+                             <div class="bg-white p-4 rounded-lg shadow-md">Tabel tugas dan penilaian untuk Guru/Admin akan ditampilkan di sini.</div>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Absensi (Admin/Teacher) -->
+                <section id="page-absensi" class="page-content hidden">
+                    <div class="bg-white rounded-lg shadow-md p-6"><h2 class="text-xl font-semibold mb-4">Absensi Kelas 10-A | 13 Oktober 2025</h2><!-- Tabel Absensi --></div>
+                </section>
+                
+                <!-- Informasi Sekolah -->
+                <section id="page-informasi" class="page-content hidden">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Informasi & Pengumuman Terkini</h2>
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="font-bold text-lg text-indigo-700">Jadwal Ujian Tengah Semester Ganjil</h3>
+                            <p class="text-sm text-gray-500 mb-2">Diposting: 28 September 2025</p>
+                            <p>Diberitahukan kepada seluruh siswa bahwa Ujian Tengah Semester (UTS) Ganjil akan dilaksanakan mulai tanggal 6 - 10 Oktober 2025. Harap mempersiapkan diri dan menjaga kesehatan. Jadwal detail dapat diunduh pada halaman materi pembelajaran.</p>
+                        </div>
+                         <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="font-bold text-lg text-indigo-700">Lomba Antar Kelas Peringatan Hari Kemerdekaan</h3>
+                            <p class="text-sm text-gray-500 mb-2">Diposting: 27 September 2025</p>
+                            <p>Dalam rangka memeriahkan HUT RI, sekolah akan mengadakan lomba antar kelas pada tanggal 17 Oktober 2025. Jenis lomba meliputi Cerdas Cermat, Tarik Tambang, dan Menghias Kelas. Segera daftarkan perwakilan kelasmu!</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow-md">
+                            <h3 class="font-bold text-lg text-indigo-700">Informasi Pembayaran SPP</h3>
+                            <p class="text-sm text-gray-500 mb-2">Diposting: 25 September 2025</p>
+                            <p>Batas akhir pembayaran SPP untuk bulan Oktober adalah tanggal 10 Oktober 2025. Pembayaran dapat dilakukan melalui transfer bank atau langsung di bagian administrasi sekolah.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Materi Belajar -->
+                <section id="page-materi" class="page-content hidden">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Materi Pembelajaran</h2>
+                     <div class="space-y-6">
+                        <!-- Matematika -->
+                        <div class="bg-white rounded-lg shadow-md p-6">
+                            <h3 class="text-xl font-semibold mb-4">Matematika</h3>
+                            <div class="space-y-3">
+                                <a href="#" class="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50 transition"><i data-lucide="file-text" class="text-red-500"></i><div><p class="font-medium">Bab 1: Integral Dasar.pdf</p><p class="text-sm text-gray-500">Diunggah oleh: Bpk. Tono</p></div></a>
+                                <a href="#" class="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50 transition"><i data-lucide="file-video" class="text-blue-500"></i><div><p class="font-medium">Video Penjelasan Turunan Fungsi.mp4</p><p class="text-sm text-gray-500">Diunggah oleh: Bpk. Tono</p></div></a>
+                            </div>
+                        </div>
+                        <!-- Bahasa Indonesia -->
+                        <div class="bg-white rounded-lg shadow-md p-6">
+                            <h3 class="text-xl font-semibold mb-4">Bahasa Indonesia</h3>
+                            <div class="space-y-3">
+                                <a href="#" class="flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50 transition"><i data-lucide="file-text" class="text-red-500"></i><div><p class="font-medium">Bab 3: Unsur Intrinsik & Ekstrinsik Cerpen.pdf</p><p class="text-sm text-gray-500">Diunggah oleh: Ibu Rina</p></div></a>
+                            </div>
+                        </div>
+                     </div>
+                </section>
+                
+                <!-- Jadwal Pelajaran -->
+                <section id="page-jadwal" class="page-content hidden">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-700">Jadwal Mata Pelajaran - Kelas 10-A</h2>
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3">Hari</th>
+                                    <th scope="col" class="px-6 py-3">Jam</th>
+                                    <th scope="col" class="px-6 py-3">Mata Pelajaran</th>
+                                    <th scope="col" class="px-6 py-3">Guru</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-white border-b"><td rowspan="2" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Senin</td><td class="px-6 py-4">07:30 - 09:00</td><td class="px-6 py-4">Matematika</td><td class="px-6 py-4">Bpk. Tono</td></tr>
+                                <tr class="bg-white border-b"><td class="px-6 py-4">09:30 - 11:00</td><td class="px-6 py-4">Bahasa Indonesia</td><td class="px-6 py-4">Ibu Rina</td></tr>
+                                <tr class="bg-gray-50 border-b"><td rowspan="2" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Selasa</td><td class="px-6 py-4">07:30 - 09:00</td><td class="px-6 py-4">Fisika</td><td class="px-6 py-4">Bpk. Agus</td></tr>
+                                <tr class="bg-gray-50 border-b"><td class="px-6 py-4">09:30 - 11:00</td><td class="px-6 py-4">Sejarah</td><td class="px-6 py-4">Ibu Wati</td></tr>
+                                <tr class="bg-white border-b"><td rowspan="2" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Rabu</td><td class="px-6 py-4">07:30 - 09:00</td><td class="px-6 py-4">Biologi</td><td class="px-6 py-4">Ibu Dian</td></tr>
+                                <tr class="bg-white border-b"><td class="px-6 py-4">09:30 - 11:00</td><td class="px-6 py-4">Bahasa Inggris</td><td class="px-6 py-4">Mr. John</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- Profil Pengguna -->
+                <section id="page-profil" class="page-content hidden">
+                    <div class="bg-white rounded-lg shadow-xl overflow-hidden">
+                        <div class="bg-cover bg-center h-32" style="background-image: url('https://placehold.co/1000x200/e0e7ff/4f46e5')"></div>
+                        <div class="p-8">
+                            <div class="flex flex-col items-center -mt-20">
+                                <img id="profile-img" src="https://placehold.co/128x128/e0e7ff/4338ca?text=U" class="w-28 h-28 rounded-full border-4 border-white shadow-lg">
+                                <h2 id="profile-name" class="text-2xl font-bold mt-4">Nama Pengguna</h2>
+                                <p id="profile-role" class="text-gray-500">Peran</p>
+                            </div>
+                            <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <!-- Informasi Pribadi (Siswa) -->
+                                <div class="student-profile-info">
+                                    <h3 class="text-lg font-semibold border-b pb-2 mb-4">Informasi Pribadi</h3>
+                                    <div class="space-y-3 text-sm">
+                                        <p><strong class="w-24 inline-block">NISN</strong>: 0012345678</p>
+                                        <p><strong class="w-24 inline-block">TTL</strong>: Jakarta, 15 Juli 2009</p>
+                                        <p><strong class="w-24 inline-block">Alamat</strong>: Jl. Pendidikan No. 123</p>
+                                    </div>
+                                </div>
+                                <!-- Gamification (Siswa) -->
+                                <div class="student-profile-info">
+                                    <h3 class="text-lg font-semibold border-b pb-2 mb-4">Gamification & Prestasi</h3>
+                                    <p class="text-sm text-gray-600 mb-4">Kumpulkan badge dengan menyelesaikan tugas dan menjaga kehadiran!</p>
+                                    <div class="flex items-center gap-6">
+                                        <div class="text-center" title="Hadir 100% bulan ini"><svg class="w-16 h-16 text-green-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.59,8.09L18,9.5L11,16.5Z"></path></svg><p class="text-xs mt-1">Absensi Sempurna</p></div>
+                                        <div class="text-center" title="Menyelesaikan 10 tugas tepat waktu"><svg class="w-16 h-16 text-blue-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12,2L14.09,8.26L20,9.27L15.55,13.45L16.91,19.27L12,16.15L7.09,19.27L8.45,13.45L4,9.27L9.91,8.26L12,2Z" /></svg><p class="text-xs mt-1">Rajin Mengerjakan</p></div>
+                                        <div class="text-center text-gray-300" title="Badge terkunci"><svg class="w-16 h-16" viewBox="0 0 24 24" fill="currentColor"><path d="M12,17A2,2 0 0,0 14,15C14,13.89 13.1,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10C4,8.89 4.9,8 6,8H7V6A5,5 0 0,1 12,1A5,5 0 0,1 17,6V8H18M12,3A3,3 0 0,0 9,6V8H15V6A3,3 0 0,0 12,3Z" /></svg><p class="text-xs mt-1">Juara Kelas</p></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // --- KONFIGURASI SUPABASE (DIHAPUS) ---
+        // Tidak ada koneksi online, semua data akan lokal.
+
+        // --- State Aplikasi ---
+        let currentUser = null;
+        const PASSWORDS = {
+            admin: '54321',
+            teacher: '12345',
+            student: '2427'
+        };
+
+        // --- Elemen DOM ---
+        const body = document.body;
+        const loginView = document.getElementById('login-view');
+        const mainPortal = document.getElementById('main-portal');
+
+        // Login elements
+        const loginForm = document.getElementById('login-form');
+        const loginRoleInput = document.getElementById('login-role');
+        const loginNameInput = document.getElementById('login-name');
+        const loginPasswordInput = document.getElementById('login-password');
+        const loginError = document.getElementById('login-error');
+        const roleTabs = document.querySelectorAll('.role-tab');
+
+        // Main portal elements
+        const sidebarLinks = document.querySelectorAll('.sidebar-link');
+        const pageContents = document.querySelectorAll('.page-content');
+        const pageTitle = document.getElementById('page-title');
+        const welcomeUserName = document.getElementById('welcome-user-name');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        // --- Fungsi Login & Navigasi ---
+        function showPortal() {
+            loginView.classList.add('hidden');
+            mainPortal.classList.remove('hidden');
+            body.className = `bg-gray-100 ${currentUser.role}-view`;
+            
+            // Set welcome message and profile details
+            welcomeUserName.textContent = currentUser.name;
+            document.getElementById('profile-name').textContent = currentUser.name;
+            const profileRoleEl = document.getElementById('profile-role');
+            const profileImg = document.getElementById('profile-img');
+            const initials = currentUser.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+            
+            let roleText = '';
+            switch(currentUser.role) {
+                case 'student': roleText = 'Siswa - Kelas 10-A'; break;
+                case 'teacher': roleText = 'Guru'; break;
+                case 'admin': roleText = 'Administrator'; break;
+            }
+            profileRoleEl.textContent = roleText;
+            profileImg.src = `https://placehold.co/128x128/e0e7ff/4338ca?text=${initials}`;
+
+            window.location.hash = 'dashboard';
+            showPage('dashboard');
+        }
+
+        function showLogin() {
+            mainPortal.classList.add('hidden');
+            loginView.classList.remove('hidden');
+            body.className = 'bg-gray-100';
+            currentUser = null;
+            loginPasswordInput.value = '';
+            loginNameInput.value = '';
+            loginError.textContent = '';
+            window.location.hash = '';
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const role = loginRoleInput.value;
+            const name = loginNameInput.value.trim();
+            const password = loginPasswordInput.value;
+
+            if (name === '') {
+                loginError.textContent = 'Nama pengguna tidak boleh kosong.';
+                return;
+            }
+
+            if (password === PASSWORDS[role]) {
+                currentUser = { name, role };
+                showPortal();
+            } else {
+                loginError.textContent = 'Password yang Anda masukkan salah.';
+            }
+        }
+        
+        function showPage(pageId) {
+            // Sembunyikan semua konten halaman
+            pageContents.forEach(page => {
+                page.classList.add('hidden');
+            });
+
+            // Tampilkan halaman yang ditargetkan
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+            }
+
+            // Perbarui judul halaman dan link sidebar yang aktif
+            let newTitle = 'Dashboard'; // Judul default
+            sidebarLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === `#${pageId}`) {
+                    link.classList.add('active');
+                    // Ambil teks dari link (tanpa ikon) untuk dijadikan judul
+                    const linkClone = link.cloneNode(true);
+                    linkClone.querySelector('i')?.remove(); // Hapus ikon jika ada
+                    newTitle = linkClone.textContent.trim();
+                }
+            });
+
+            // Set judul di header
+            pageTitle.textContent = newTitle;
+        }
+        
+        // --- LOGIKA MANAJEMEN TUGAS (LOKAL) ---
+        const addTaskForm = document.getElementById('add-task-form');
+        const taskInput = document.getElementById('task-input');
+        const activeTasksList = document.getElementById('active-tasks-list');
+        const completedTasksList = document.getElementById('completed-tasks-list');
+        const noActiveTasks = document.getElementById('no-active-tasks');
+        const noCompletedTasks = document.getElementById('no-completed-tasks');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const tasksContainer = document.getElementById('tasks-container');
+
+        // Muat tugas dari localStorage atau gunakan data contoh jika kosong
+        let localTasks = JSON.parse(localStorage.getItem('portalTasks')) || [
+            { id: 1, task_name: 'Merangkum Bab 3 Sejarah Indonesia', is_completed: false },
+            { id: 2, task_name: 'Mengerjakan Latihan Soal Fisika Hal. 54', is_completed: true },
+            { id: 3, task_name: 'Membuat Puisi bertema Pahlawan', is_completed: true },
+            { id: 4, task_name: 'Laporan Praktikum Biologi', is_completed: true },
+        ];
+        
+        // Fungsi untuk menyimpan tugas ke localStorage
+        function saveTasks() {
+            localStorage.setItem('portalTasks', JSON.stringify(localTasks));
+        }
+        
+        // Fungsi untuk mengambil dan render tugas (sekarang hanya render)
+        function fetchTasks() {
+            loadingIndicator.style.display = 'none';
+            tasksContainer.style.display = 'block';
+            renderTasks(localTasks); // Langsung render dari localTasks
+        }
+
+        function renderTasks(tasks = []) {
+            activeTasksList.innerHTML = '';
+            completedTasksList.innerHTML = '';
+            const activeTasks = tasks.filter(t => !t.is_completed);
+            const completedTasks = tasks.filter(t => t.is_completed);
+            noActiveTasks.style.display = activeTasks.length === 0 ? 'block' : 'none';
+            noCompletedTasks.style.display = completedTasks.length === 0 ? 'block' : 'none';
+            tasks.forEach(task => {
+                const taskItem = document.createElement('div');
+                taskItem.className = 'task-item bg-white rounded-lg shadow-sm p-4 flex items-center justify-between transition-all duration-300 border';
+                taskItem.dataset.id = task.id;
+                const isCompleted = task.is_completed;
+                taskItem.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <button class="complete-btn p-1"><i data-lucide="check-circle-2" class="w-6 h-6 ${isCompleted ? 'text-green-500' : 'text-gray-300 hover:text-green-400'}"></i></button>
+                        <span class="${isCompleted ? 'line-through text-gray-400' : ''}">${task.task_name}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                         <span class="text-xs font-semibold student-only ${isCompleted ? 'text-green-600' : 'text-yellow-600'}">${isCompleted ? 'Selesai' : 'Belum Selesai'}</span>
+                        <button class="delete-btn opacity-0 text-red-500 hover:text-red-700 p-1 transition-opacity admin-teacher-only" style="display:none;" title="Hapus tugas"><i data-lucide="trash-2" class="w-5 h-5"></i></button>
+                    </div>
+                `;
+                if (isCompleted) completedTasksList.appendChild(taskItem);
+                else activeTasksList.appendChild(taskItem);
+            });
+            lucide.createIcons();
+        }
+        
+        async function addTask(event) {
+            event.preventDefault();
+            const taskName = taskInput.value.trim();
+            if (taskName === '') return;
+
+            // Logika lokal
+            const newTask = { id: Date.now(), task_name: taskName, is_completed: false };
+            localTasks.unshift(newTask);
+            saveTasks(); // Simpan ke localStorage
+            renderTasks(localTasks);
+            taskInput.value = '';
+        }
+        
+        async function handleTaskClick(event) {
+            const completeBtn = event.target.closest('.complete-btn');
+            const deleteBtn = event.target.closest('.delete-btn');
+            const taskItem = event.target.closest('.task-item');
+            if (!taskItem) return;
+            const taskId = taskItem.dataset.id;
+            
+            // Logika data lokal
+            const task = localTasks.find(t => t.id == taskId);
+            if (!task) return;
+
+            if (completeBtn) {
+                task.is_completed = !task.is_completed;
+                saveTasks(); // Simpan perubahan
+                renderTasks(localTasks);
+            }
+            if (deleteBtn) {
+                if (confirm("Apakah Anda yakin ingin menghapus tugas ini?")) {
+                    localTasks = localTasks.filter(t => t.id != taskId);
+                    saveTasks(); // Simpan perubahan
+                    renderTasks(localTasks);
+                }
+            }
+        }
+        
+        // Hapus fungsi toggleTask dan deleteTask yang spesifik Supabase
+        
+        // --- Event Listeners and Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial view setup
+            showLogin();
+            
+            // Login logic
+            roleTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const role = tab.dataset.role;
+                    loginRoleInput.value = role;
+                    roleTabs.forEach(t => t.classList.remove('border-indigo-600', 'text-indigo-600'));
+                    tab.classList.add('border-indigo-600', 'text-indigo-600');
+                    loginError.textContent = '';
+                });
+            });
+            loginForm.addEventListener('submit', handleLogin);
+            logoutBtn.addEventListener('click', showLogin);
+
+            // Hash-based navigation
+            window.addEventListener('hashchange', () => {
+                if (currentUser) {
+                    const hash = window.location.hash.substring(1) || 'dashboard';
+                    showPage(hash);
+                }
+            });
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = link.getAttribute('href').substring(1);
+                    window.location.hash = targetId;
+                });
+            });
+
+            // Logika tugas lokal
+            fetchTasks(); // Langsung panggil fetchTasks
+            addTaskForm.addEventListener('submit', addTask);
+            tasksContainer.addEventListener('click', handleTaskClick);
+        });
+    </script>
+</body>
+</html>
