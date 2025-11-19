@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Schedule SMANIDA</title>
+    <!-- 1. Muat Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. Muat Font Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Ikon Lucide untuk UI -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* Terapkan font Inter sebagai font default */
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Latar Belakang Luar Angkasa */
+            background-color: #0b0f1a; /* Sangat gelap */
+            background-image: radial-gradient(at 0% 0%, rgba(13, 20, 48, 0.4) 0%, transparent 50%),
+                              radial-gradient(at 100% 100%, rgba(30, 0, 70, 0.3) 0%, transparent 50%);
+            color: #E2E8F0; /* Teks default terang */
+        }
+        /* Style untuk Tabel Jadwal agar terlihat bagus di latar gelap */
+        .schedule-table thead {
+            background-color: #1a2033;
+        }
+        .schedule-table th {
+            color: #94A3B8;
+        }
+        /* Style khusus untuk baris istirahat */
+        .break-row {
+            background-color: #1e293b;
+            color: #94A3B8;
+            font-style: italic;
+        }
+        /* Style untuk tampilan loading */
+        .loader {
+            border-top-color: #22D3EE;
+            border-left-color: #22D3EE;
+            border-right-color: transparent;
+            border-bottom-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    
+    <script>
+        // Konfigurasi kustom Tailwind (untuk warna aksen)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'galaxy-primary': '#0F172A',
+                        'galaxy-secondary': '#1E293B',
+                        'galaxy-accent': '#22D3EE', // Cyan neon
+                        'galaxy-accent-hover': '#06B6D4',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <!-- HEADER & NAVIGASI -->
+    <header class="bg-galaxy-primary shadow-2xl w-full border-b border-cyan-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo / Judul -->
+                <div id="home-link" class="flex-shrink-0 flex items-center space-x-2 cursor-pointer">
+                    <!-- Ikon Planet / Galaksi -->
+                    <svg class="h-8 w-8 text-galaxy-accent" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3.75 3.75c1.782-.942 3.824-1.5 6.012-1.5 2.213 0 4.276.58 6.096 1.583a2.25 2.25 0 01-2.083 3.655 40.597 40.597 0 00-6.024 0 2.25 2.25 0 01-2.083-3.655zM6.603 7.828a2.25 2.25 0 100 4.344 40.586 40.586 0 00-1.22-.095c-.482 0-.875.393-.875.875s.393.875.875.875c.298 0 .584-.078.835-.224v.245c0 1.05.688 1.92 1.637 2.193a2.25 2.25 0 003.885-1.583 1.574 1.574 0 01-.223-.527v-.526a40.724 40.724 0 006.273 0v.526a1.574 1.574 0 01-.223.527 2.25 2.25 0 003.885 1.583c.949-.273 1.637-1.143 1.637-2.193v-.245a2.25 2.25 0 00.835.224c.482 0 .875-.393.875-.875s-.393-.875-.875-.875a40.586 40.586 0 00-1.22.095 2.25 2.25 0 100-4.344c.482 0 .875-.393.875-.875s-.393-.875-.875-.875c-1.532 0-3.042.19-4.524.551a2.25 2.25 0 00-4.484 0A40.586 40.586 0 006.603 7.828z" clip-rule="evenodd" />
+                    </svg>
+                    <span class="text-2xl font-bold text-galaxy-accent">E-Schedule SMANIDA</span>
+                </div>
+
+                <!-- Navigasi Utama -->
+                <nav class="hidden md:flex space-x-6 items-center">
+                    <button class="nav-link text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" data-view="schedule">
+                        Jadwal Kelas
+                    </button>
+                    <!-- Navigasi Baru: Jadwal Piket -->
+                    <button class="nav-link text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" data-view="duty-schedule">
+                        Jadwal Piket
+                    </button>
+                    <!-- Navigasi Akun/Admin -->
+                    <span id="welcome-message" class="text-sm text-gray-400 hidden"></span>
+                    
+                    <!-- Tombol Kelola User (Hanya Admin) -->
+                    <button id="manage-users-button" class="text-gray-400 hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium hidden transition-colors duration-200 flex items-center space-x-1" data-view="user-management">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        <span>Kelola User</span>
+                    </button>
+
+                    <button class="nav-link text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" data-view="notifications">
+                        Notifikasi
+                    </button>
+                    <button class="nav-link text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" data-view="notes">
+                        Catatan Pribadi
+                    </button>
+                    
+                    <!-- Tombol Logout (Fitur yang diminta) -->
+                    <button id="logout-button" class="bg-red-600 text-white px-3 py-2 rounded-xl text-sm font-bold hover:bg-red-700 shadow-lg hidden transition-colors duration-200">
+                        Logout
+                    </button>
+                </nav>
+                <!-- Navigasi Mobile (Sederhana: hanya tombol logout) -->
+                <div class="md:hidden flex items-center">
+                    <button id="mobile-logout-button" class="bg-red-600 text-white px-3 py-1 rounded-xl text-sm font-bold hover:bg-red-700 shadow-lg hidden transition-colors duration-200">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- LOADING SCREEN -->
+    <div id="loading-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black bg-opacity-90">
+        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-900 h-16 w-16 mb-4"></div>
+        <p class="text-galaxy-accent text-lg font-semibold">Menginisialisasi Sistem SMANIDA...</p>
+    </div>
+
+    <!-- KONTENER LOGIN -->
+    <div id="login-container" class="flex-grow flex items-center justify-center p-4 hidden">
+        <div class="w-full max-w-md bg-galaxy-secondary rounded-xl shadow-2xl border border-cyan-800/50 p-8">
+            <h2 class="text-center text-2xl font-semibold text-gray-100 mb-4">Akses Sistem SMANIDA</h2>
+            <form id="login-form">
+                <div class="mb-4">
+                    <label for="username" class="block text-sm font-medium text-gray-300 mb-1">Kode Identitas (Username)</label>
+                    <input type="text" id="username" name="username" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg shadow-inner text-white focus:outline-none focus:ring-galaxy-accent focus:border-galaxy-accent" required>
+                </div>
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-300 mb-1">Kunci Akses (Password)</label>
+                    <input type="password" id="password" name="password" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg shadow-inner text-white focus:outline-none focus:ring-galaxy-accent focus:border-galaxy-accent" required>
+                </div>
+                <p id="login-error" class="text-sm text-red-400 text-center mb-4 hidden"></p>
+                <button id="login-button" type="submit" class="w-full bg-galaxy-accent text-galaxy-primary py-2 px-4 rounded-xl font-bold hover:bg-galaxy-accent-hover shadow-lg transition-colors duration-200">
+                    Masuk ke Sistem
+                </button>
+            </form>
+            <div class="mt-6 text-center text-xs text-gray-400">
+                <p>Admin: <code class="bg-gray-700 p-1 rounded">admin123</code> / <code class="bg-gray-700 p-1 rounded">admin123</code></p>
+                <p class="mt-1">User: <code class="bg-gray-700 p-1 rounded">user123</code> / <code class="bg-gray-700 p-1 rounded">user123</code></p>
+                <p class="mt-1">Pending: <code class="bg-gray-700 p-1 rounded">pendinguser</code> / <code class="bg-gray-700 p-1 rounded">pending123</code></p>
+            </div>
+            <p class="mt-4 text-center text-sm">Belum terdaftar? <a href="#" id="show-register-link" class="font-medium text-galaxy-accent hover:text-galaxy-accent-hover">Daftar Akun Kapsul (Simulasi)</a></p>
+        </div>
+    </div>
+
+    <!-- KONTENER JADWAL KELAS (DEFAULT MAIN VIEW) -->
+    <main id="schedule-container" class="flex-grow hidden p-4 sm:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="bg-galaxy-secondary rounded-xl shadow-2xl overflow-hidden border border-cyan-800/50">
+                
+                <!-- Filter Bar -->
+                <div class="p-4 sm:p-6 bg-galaxy-primary border-b border-cyan-800/50 flex flex-col sm:flex-row justify-between sm:items-center space-y-4 sm:space-y-0">
+                    <div>
+                        <h2 id="schedule-title" class="text-xl sm:text-2xl font-semibold text-galaxy-accent"></h2>
+                        <p class="text-sm text-gray-400">Jurnal Akademik SMANIDA</p>
+                    </div>
+                    
+                    <div class="flex items-center space-x-3">
+                        <label for="class-selector" class="text-sm font-medium text-gray-300">Pilih Kelas:</label>
+                        <select id="class-selector" name="class" class="rounded-lg bg-gray-700 border-gray-600 shadow-sm focus:border-galaxy-accent focus:ring-galaxy-accent text-sm text-white">
+                            <!-- Opsi kelas akan diisi oleh JavaScript -->
+                        </select>
+                        <!-- Tombol Tambah Jadwal (Admin Only) -->
+                        <button id="add-schedule-button" class="hidden ml-3 bg-galaxy-accent text-galaxy-primary px-3 py-2 rounded-xl text-sm font-bold hover:bg-galaxy-accent-hover transition-colors duration-200">
+                            + Tambah Jadwal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Wrapper Tabel agar Responsif (Scroll Horizontal di HP) -->
+                <div class="overflow-x-auto">
+                    <table class="w-full schedule-table">
+                        <!-- Header Tabel -->
+                        <thead class="bg-galaxy-primary">
+                            <tr>
+                                <th class="p-3 w-1/6 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Waktu</th>
+                                <th class="p-3 w-1/5 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Senin</th>
+                                <th class="p-3 w-1/5 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Selasa</th>
+                                <th class="p-3 w-1/5 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Rabu</th>
+                                <th class="p-3 w-1/5 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Kamis</th>
+                                <th class="p-3 w-1/5 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Jumat</th>
+                            </tr>
+                        </thead>
+                        
+                        <!-- Body Tabel (Akan diisi oleh JavaScript) -->
+                        <tbody id="schedule-body" class="bg-galaxy-secondary divide-y divide-gray-700">
+                            <!-- Diisi oleh JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <!-- KONTENER JADWAL PIKET -->
+    <div id="duty-schedule-container" class="flex-grow hidden p-4 sm:p-6 lg:p-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="bg-galaxy-secondary rounded-xl shadow-2xl overflow-hidden border border-cyan-800/50">
+                
+                <!-- Header Piket -->
+                <div class="p-4 sm:p-6 bg-galaxy-primary border-b border-cyan-800/50 flex justify-between items-center">
+                    <h2 class="text-xl sm:text-2xl font-semibold text-galaxy-accent flex items-center space-x-2">
+                        <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                        <span>Jadwal Piket Mingguan Kru</span>
+                    </h2>
+                    <!-- Tombol Edit Piket (Admin Only) -->
+                    <button id="edit-duty-schedule-button" class="hidden bg-galaxy-accent text-galaxy-primary px-3 py-2 rounded-xl text-sm font-bold hover:bg-galaxy-accent-hover transition-colors duration-200">
+                        Kelola Piket
+                    </button>
+                </div>
+
+                <!-- Isi Jadwal Piket -->
+                <div class="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4" id="duty-schedule-grid">
+                    <!-- Kartu Piket akan diisi di sini oleh JS -->
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+
+    <!-- KONTENER NOTIFIKASI -->
+    <div id="notifications-container" class="flex-grow hidden p-4 sm:p-6 lg:p-8">
+        <div class="max-w-4xl mx-auto bg-galaxy-secondary rounded-xl shadow-2xl border border-cyan-800/50 p-6">
+            <h2 class="text-2xl font-semibold text-galaxy-accent mb-6 flex items-center space-x-2">
+                <i data-lucide="bell" class="w-6 h-6"></i>
+                <span>Pusat Notifikasi Sistem</span>
+            </h2>
+            <div id="notifications-list" class="space-y-4">
+                <!-- Notifikasi Statis akan diisi di sini oleh JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- KONTENER CATATAN PRIBADI (FIREBASE) -->
+    <div id="notes-container" class="flex-grow hidden p-4 sm:p-6 lg:p-8">
+        <div class="max-w-4xl mx-auto bg-galaxy-secondary rounded-xl shadow-2xl border border-cyan-800/50 p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-galaxy-accent flex items-center space-x-2">
+                    <i data-lucide="notebook-text" class="w-6 h-6"></i>
+                    <span>Catatan Pribadi Anda</span>
+                </h2>
+                <button id="add-note-button" class="bg-galaxy-accent text-galaxy-primary px-4 py-2 rounded-xl text-sm font-bold hover:bg-galaxy-accent-hover transition-colors duration-200 flex items-center space-x-1">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Buat Catatan Baru</span>
+                </button>
+            </div>
+            
+            <div id="notes-error" class="text-red-400 mb-4 hidden"></div>
+            <div id="notes-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div id="notes-loading" class="md:col-span-2 text-center text-gray-400 py-10">Memuat catatan dari server...</div>
+                <!-- Catatan akan diisi di sini oleh JS dari Firestore -->
+            </div>
+        </div>
+    </div>
+
+    <!-- KONTENER KELOLA USER (ADMIN) -->
+    <div id="user-management-container" class="flex-grow hidden p-4 sm:p-6 lg:p-8">
+        <div class="w-full max-w-5xl mx-auto bg-galaxy-secondary rounded-xl shadow-2xl border border-cyan-800/50 p-6">
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                <h2 class="text-2xl font-semibold text-red-400 flex items-center space-x-2">
+                    <i data-lucide="shield-alert" class="w-7 h-7"></i>
+                    <span>Panel Kendali Otorisasi Kru</span>
+                </h2>
+                <button id="back-to-schedule-btn" class="bg-galaxy-accent text-galaxy-primary px-3 py-2 rounded-xl text-sm font-bold hover:bg-galaxy-accent-hover transition-colors duration-200">
+                    &larr; Kembali ke Jadwal
+                </button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-max">
+                    <thead class="bg-galaxy-primary sticky top-0">
+                        <tr>
+                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Kode Identitas (Username)</th>
+                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Level Akses</th>
+                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Status Otorisasi</th>
+                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Aksi Kendali</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-list-body" class="bg-galaxy-secondary divide-y divide-gray-700">
+                        <!-- Daftar user akan diisi oleh JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- FOOTER -->
+    <footer class="bg-galaxy-primary mt-12 border-t border-cyan-700/50">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center">
+            <p class="text-sm text-gray-400">&copy; 2025 E-Schedule SMANIDA. Sistem Informasi Terpadu.</p>
+        </div>
+    </footer>
+
+    <!-- MODAL (TAMBAH/EDIT JADWAL) -->
+    <div id="schedule-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden p-4">
+        <!-- ... Jadwal Modal Content ... -->
+        <div class="bg-galaxy-secondary rounded-xl shadow-2xl w-full max-w-lg p-6 border border-cyan-800/50">
+            <h3 id="modal-title" class="text-xl font-medium leading-6 text-galaxy-accent mb-4">Tambah Jadwal Baru</h3>
+            <form id="schedule-form">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="day-select" class="block text-sm font-medium text-gray-300">Hari Siklus</label>
+                        <select id="day-select" class="mt-1 block w-full rounded-lg bg-gray-700 border-gray-600 shadow-sm focus:border-galaxy-accent focus:ring-galaxy-accent text-sm text-white" required></select>
+                    </div>
+                    <div>
+                        <label for="time-select" class="block text-sm font-medium text-gray-300">Waktu Pelajaran</label>
+                        <select id="time-select" class="mt-1 block w-full rounded-lg bg-gray-700 border-gray-600 shadow-sm focus:border-galaxy-accent focus:ring-galaxy-accent text-sm text-white" required></select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label for="subject-select" class="block text-sm font-medium text-gray-300">Mata Pelajaran (Modul)</label>
+                        <select id="subject-select" class="mt-1 block w-full rounded-lg bg-gray-700 border-gray-600 shadow-sm focus:border-galaxy-accent focus:ring-galaxy-accent text-sm text-white" required></select>
+                    </div>
+                    <div>
+                        <label for="teacher-select" class="block text-sm font-medium text-gray-300">Guru (Instruktur)</label>
+                        <select id="teacher-select" class="mt-1 block w-full rounded-lg bg-gray-700 border-gray-600 shadow-sm focus:border-galaxy-accent focus:ring-galaxy-accent text-sm text-white" required></select>
+                    </div>
+                    <div>
+                        <label for="room-select" class="block text-sm font-medium text-gray-300">Lokasi (Ruangan)</label>
+                        <select id="room-select" class="mt-1 block w-full rounded-lg bg-gray-700 border-gray-600 shadow-sm focus:border-galaxy-accent focus:ring-galaxy-accent text-sm text-white" required></select>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-schedule-button" class="bg-gray-700 py-2 px-4 border border-gray-600 rounded-xl shadow-sm text-sm font-medium text-gray-300 hover:bg-gray-600 focus:outline-none transition-colors duration-200">
+                        Batalkan
+                    </button>
+                    <button type="submit" class="bg-galaxy-accent text-galaxy-primary py-2 px-4 rounded-xl text-sm font-bold hover:bg-galaxy-accent-hover transition-colors duration-200">
+                        Sinkronisasi Jadwal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- MODAL CATATAN PRIBADI -->
+    <div id="note-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden p-4">
+        <!-- ... Catatan Modal Content ... -->
+        <div class="bg-galaxy-secondary rounded-xl shadow-2xl w-full max-w-md p-6 border border-cyan-800/50">
+            <h3 id="note-modal-title" class="text-xl font-medium leading-6 text-galaxy-accent mb-4">Buat Catatan Baru</h3>
+            <form id="note-form">
+                <div class="mb-4">
+                    <label for="note-title" class="block text-sm font-medium text-gray-300">Judul Catatan</label>
+                    <input type="text" id="note-title" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg shadow-inner text-white focus:outline-none focus:ring-galaxy-accent focus:border-galaxy-accent" required>
+                </div>
+                <div class="mb-6">
+                    <label for="note-content" class="block text-sm font-medium text-gray-300">Isi Catatan</label>
+                    <textarea id="note-content" rows="6" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg shadow-inner text-white focus:outline-none focus:ring-galaxy-accent focus:border-galaxy-accent" required></textarea>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" id="cancel-note-button" class="bg-gray-700 py-2 px-4 border border-gray-600 rounded-xl shadow-sm text-sm font-medium text-gray-300 hover:bg-gray-600 focus:outline-none transition-colors duration-200">
+                        Batalkan
+                    </button>
+                    <button type="submit" id="save-note-button" class="bg-galaxy-accent text-galaxy-primary py-2 px-4 rounded-xl text-sm font-bold hover:bg-galaxy-accent-hover transition-colors duration-200">
+                        Simpan Catatan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- SCRIPT JAVASCRIPT & FIREBASE -->
+    <script type="module">
+        // Firebase Imports
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, setLogLevel, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global Variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth;
+        let userId = null;
+        let currentUserRole = null; // null, 'user', atau 'admin'
+        let isAuthReady = false;
+        let isEditingNote = false;
+        let currentNoteId = null;
+
+        // Set Firebase Log Level
+        setLogLevel('debug');
+
+
+        // --- STATE APLIKASI (SIMULASI DATA) ---
+
+        // 1. Data Master (Guru, Mapel, Ruangan)
+        const teachers = {
+            'T01': { name: 'Budi Santoso, S.Pd.', color: 'bg-blue-900 text-blue-300 border-blue-700' },
+            'T02': { name: 'Rina Hartati, M.Kom.', color: 'bg-yellow-900 text-yellow-300 border-yellow-700' },
+            'T03': { name: 'Endang Pujiastuti, S.Si.', color: 'bg-green-900 text-green-300 border-green-700' },
+            'T04': { name: 'Deni Setiawan, S.Pd.', color: 'bg-purple-900 text-purple-300 border-purple-700' },
+            'T05': { name: 'Agus Wijaya, S.Or.', color: 'bg-red-900 text-red-300 border-red-700' },
+            'T06': { name: 'Siti Aminah, S.Ag.', color: 'bg-teal-900 text-teal-300 border-teal-700' },
+            'T07': { name: 'Rini Wulandari, S.Sn.', color: 'bg-pink-900 text-pink-300 border-pink-700' },
+            'T08': { name: 'Joko Susilo, S.E.', color: 'bg-indigo-900 text-indigo-300 border-indigo-700' },
+        };
+        const teacherKeys = Object.keys(teachers);
+
+        const subjects = {
+            'S01': 'Matematika Kosmos', 'S02': 'Linguistik Intergalaksi', 'S03': 'Mekanika Kuantum',
+            'S04': 'Xenobiologi', 'S05': 'Sejarah Peradaban Kuno', 'S06': 'Latihan Gravitasi Nol',
+            'S07': 'Etika Antarbudaya', 'S08': 'Seni Rupa Hologram', 'S09': 'Ekonomi Pasar Nebula',
+            'S10': 'Studi Bahasa Bumi',
+        };
+        const subjectKeys = Object.keys(subjects);
+
+        const rooms = {
+            'R01': 'Kapsul Stasiun 12A', 'R02': 'Kapsul Stasiun 12B', 'R03': 'Kapsul Stasiun 12C',
+            'R04': 'Lab. Astrofisika', 'R05': 'Lab. Xenobiologi', 'R06': 'Dek Latihan (Gravitasi Nol)',
+            'R07': 'Ruang Komando', 'R08': 'Kapsul Stasiun 12D', 'R09': 'Kapsul Stasiun 12E',
+            'R10': 'Kapsul Stasiun 12F', 'R11': 'Kapsul Stasiun 12G', 'R12': 'Kapsul Stasiun 12H',
+            'R13': 'Kapsul Stasiun 12I', 'R14': 'Kapsul Stasiun 12J', 'R15': 'Kapsul Stasiun 12K',
+            'R16': 'Kapsul Stasiun 12L',
+        };
+        const roomKeys = Object.keys(rooms);
+
+        // 2. Data Jadwal Utama per Kelas
+        let scheduleData = {}; 
+
+        // 3. Database User (SIMULASI UNTUK LOGIN & KELOLA USER)
+        let simulatedUserData = {
+            'admin123': { pass: 'admin123', role: 'admin', status: 'approved' },
+            'user123': { pass: 'user123', role: 'user', status: 'approved' },
+            'pendinguser': { pass: 'pending123', role: 'user', status: 'pending' },
+            'baru_daftar': { pass: 'rahasia', role: 'user', status: 'pending' },
+            'kru_senior': { pass: 'seniorkru', role: 'user', status: 'approved' },
+        };
+        
+        // 4. Slot Waktu dan Hari
+        const timeSlots = [
+            '07:00 - 08:30',
+            '08:30 - 09:15', // Istirahat 1
+            '09:15 - 10:45',
+            '10:45 - 12:15',
+            '12:15 - 13:00', // Istirahat 2
+            '13:00 - 14:00',
+            '14:00 - 15:00',
+        ];
+        const breakTimes = ['08:30 - 09:15', '12:15 - 13:00'];
+        const days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+
+        // 5. Notifikasi Statis
+        const staticNotifications = [
+            { id: 1, title: 'Sistem Diperbarui ke Versi 2.0', content: 'Aplikasi E-Schedule SMANIDA kini memiliki fitur Catatan Pribadi dan Notifikasi. Silakan jelajahi!', type: 'success', date: '2025-11-12' },
+            { id: 2, title: 'Perubahan Jadwal: Lab. Astrofisika', content: 'Modul Mekanika Kuantum hari Kamis, 10:45 - 12:15 dipindahkan ke Kapsul Stasiun 12D minggu ini.', type: 'warning', date: '2025-11-10' },
+            { id: 3, title: 'Selamat Datang Kembali!', content: 'Kami menyambut seluruh kru dan siswa SMANIDA untuk tahun akademik baru.', type: 'info', date: '2025-11-01' },
+        ];
+
+        // 6. Data Jadwal Piket
+        const dutyScheduleData = {
+            'Senin': [
+                { post: 'Petugas Upacara', kru: ['Siswa XII-A', 'Siswa XII-B', 'Siswa XI-C'], color: 'bg-red-800' },
+                { post: 'Piket Kelas', kru: ['Siswa XII-C', 'Siswa XI-A'], color: 'bg-green-800' },
+                { post: 'Jaga Pintu Utama', kru: ['Siswa X-B'], color: 'bg-yellow-800' },
+            ],
+            'Selasa': [
+                { post: 'Petugas Upacara', kru: ['Siswa XII-D', 'Siswa XII-E', 'Siswa XI-F'], color: 'bg-red-800' },
+                { post: 'Piket Kelas', kru: ['Siswa XII-F', 'Siswa XI-D'], color: 'bg-green-800' },
+                { post: 'Jaga Pintu Utama', kru: ['Siswa X-D'], color: 'bg-yellow-800' },
+            ],
+            'Rabu': [
+                { post: 'Petugas Upacara', kru: ['Siswa XI-G', 'Siswa XI-H', 'Siswa X-I'], color: 'bg-red-800' },
+                { post: 'Piket Kelas', kru: ['Siswa XI-I', 'Siswa X-A'], color: 'bg-green-800' },
+                { post: 'Jaga Pintu Utama', kru: ['Siswa XI-B'], color: 'bg-yellow-800' },
+            ],
+            'Kamis': [
+                { post: 'Petugas Upacara', kru: ['Siswa X-J', 'Siswa X-K', 'Siswa XII-L'], color: 'bg-red-800' },
+                { post: 'Piket Kelas', kru: ['Siswa X-C', 'Siswa XII-G'], color: 'bg-green-800' },
+                { post: 'Jaga Pintu Utama', kru: ['Siswa X-E'], color: 'bg-yellow-800' },
+            ],
+            'Jumat': [
+                { post: 'Petugas Upacara', kru: ['Siswa XII-H', 'Siswa XII-I', 'Siswa XII-J'], color: 'bg-red-800' },
+                { post: 'Piket Kelas', kru: ['Siswa XII-K', 'Siswa XI-B'], color: 'bg-green-800' },
+                { post: 'Jaga Pintu Utama', kru: ['Siswa X-F'], color: 'bg-yellow-800' },
+            ]
+        };
+
+
+        // --- ELEMEN DOM ---
+        const $ = (id) => document.getElementById(id);
+        const $$ = (selector) => document.querySelectorAll(selector);
+
+        // Containers
+        const loadingScreen = $('loading-screen');
+        const loginContainer = $('login-container');
+        const scheduleContainer = $('schedule-container');
+        const dutyScheduleContainer = $('duty-schedule-container'); 
+        const notificationsContainer = $('notifications-container');
+        const notesContainer = $('notes-container');
+        const userManagementContainer = $('user-management-container'); 
+
+        // Login/Register
+        const loginForm = $('login-form');
+        const usernameInput = $('username');
+        const passwordInput = $('password');
+        const loginError = $('login-error');
+        const showRegisterLink = $('show-register-link');
+        
+        // Navigasi
+        const homeLink = $('home-link');
+        const navLinks = $$('.nav-link');
+        const welcomeMessage = $('welcome-message');
+        const logoutButton = $('logout-button');
+        const mobileLogoutButton = $('mobile-logout-button');
+        const manageUsersButton = $('manage-users-button');
+        const backToScheduleBtn = $('back-to-schedule-btn');
+        
+        // Schedule
+        const classSelector = $('class-selector');
+        const scheduleBody = $('schedule-body');
+        const scheduleTitle = $('schedule-title');
+        const addScheduleButton = $('add-schedule-button');
+        
+        // Duty Schedule
+        const dutyScheduleGrid = $('duty-schedule-grid');
+        const editDutyScheduleButton = $('edit-duty-schedule-button');
+
+        // Notifications
+        const notificationsList = $('notifications-list');
+
+        // Notes (Catatan Pribadi)
+        const notesList = $('notes-list');
+        const notesLoading = $('notes-loading');
+        const addNoteButton = $('add-note-button');
+        const notesError = $('notes-error');
+
+        // Modals
+        const scheduleModal = $('schedule-modal');
+        const noteModal = $('note-modal');
+        const scheduleForm = $('schedule-form');
+        const noteForm = $('note-form');
+        const noteTitleInput = $('note-title');
+        const noteContentInput = $('note-content');
+        const noteModalTitle = $('note-modal-title');
+        
+        // --- FUNGSI FIREBASE ---
+
+        /** Inisialisasi Firebase dan Autentikasi */
+        async function initFirebaseAndAuth() {
+            try {
+                if (!firebaseConfig) {
+                    console.error("Firebase config is missing.");
+                    loadingScreen.classList.add('hidden');
+                    return;
+                }
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app); 
+
+                // Listener Perubahan Status Autentikasi
+                onAuthStateChanged(auth, (user) => {
+                    loadingScreen.classList.add('hidden');
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        // Jika sudah login via token, tampilkan login screen untuk otorisasi peran
+                        // Otorisasi peran (admin/user) dilakukan setelah login di form
+                        showLoginScreen();
+                    } else {
+                        userId = null;
+                        isAuthReady = true;
+                        showLoginScreen();
+                    }
+                });
+
+                // Sign in using custom token or anonymously
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                
+            } catch (error) {
+                console.error("Error during Firebase initialization or sign-in:", error);
+                loadingScreen.classList.add('hidden');
+            }
+        }
+
+
+        // --- FUNGSI UTAMA ---
+
+        /** Fungsi helper random */
+        const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        /** Menghasilkan data jadwal awal */
+        function generateInitialScheduleData() {
+            const classes = "ABCDEFGHIJKL".split('');
+            for (const char of classes) {
+                const className = `12${char}`;
+                let classSchedule = [];
+                for (let i = 0; i < 8; i++) { 
+                    classSchedule.push({
+                        day: getRandom(days),
+                        time: getRandom(timeSlots.filter(t => !breakTimes.includes(t))),
+                        subjectId: getRandom(subjectKeys),
+                        teacherId: getRandom(teacherKeys),
+                        roomId: getRandom(roomKeys)
+                    });
+                }
+                const uniqueSchedule = [...new Map(classSchedule.map(item => [`${item.day}-${item.time}`, item])).values()];
+                scheduleData[className] = uniqueSchedule;
+            }
+        }
+
+        /** Mengisi dropdown kelas 12A-12L */
+        function populateClassDropdown() {
+            classSelector.innerHTML = '';
+            for (const className in scheduleData) {
+                classSelector.innerHTML += `<option value="${className}">Kelas ${className}</option>`;
+            }
+        }
+
+        /** Merender tabel jadwal */
+        function renderSchedule(selectedClass) {
+            scheduleTitle.textContent = `Jadwal Pelajaran: Kelas ${selectedClass}`;
+            let html = '';
+
+            for (const time of timeSlots) {
+                if (breakTimes.includes(time)) {
+                    html += `
+                        <tr class="break-row">
+                            <td class="p-3 align-middle text-center text-sm font-medium">${time}</td>
+                            <td colspan="5" class="p-3 align-middle text-center text-sm font-medium uppercase tracking-wider">
+                                ISTIRAHAT - SINKRONISASI JARINGAN
+                            </td>
+                        </tr>
+                    `;
+                    continue;
+                }
+
+                html += `<tr class="hover:bg-gray-800 transition-colors duration-150">`;
+                html += `<td class="p-4 align-top font-medium text-gray-300 text-sm">${time}</td>`;
+
+                for (const day of days) {
+                    const entry = findScheduleEntry(selectedClass, day, time);
+
+                    if (entry) {
+                        const subject = subjects[entry.subjectId] || 'N/A';
+                        const teacher = teachers[entry.teacherId] || { name: 'N/A', color: 'bg-gray-900 text-gray-400 border-gray-700' };
+                        const room = rooms[entry.roomId] || 'N/A';
+
+                        html += `
+                            <td class="p-2 align-top" style="min-width: 150px;">
+                                <div class="p-3 rounded-xl shadow-md border ${teacher.color} relative">
+                                    <strong class="font-semibold block text-sm">${subject}</strong>
+                                    <span class="text-xs block">${teacher.name}</span>
+                                    <span class="text-xs block italic mt-1">${room}</span>
+                                    
+                                    <!-- Tombol Admin -->
+                                    ${currentUserRole === 'admin' ? `
+                                    <div class="absolute top-1 right-1 flex space-x-1">
+                                        <button class="edit-btn p-1 bg-white/10 rounded-full hover:bg-white/20 transition-colors duration-150" data-class="${selectedClass}" data-day="${day}" data-time="${time}" title="Ubah">
+                                            <i data-lucide="square-pen" class="w-4 h-4 text-cyan-300"></i>
+                                        </button>
+                                        <button class="delete-btn p-1 bg-white/10 rounded-full hover:bg-white/20 transition-colors duration-150" data-class="${selectedClass}" data-day="${day}" data-time="${time}" title="Hapus">
+                                            <i data-lucide="trash-2" class="w-4 h-4 text-red-400"></i>
+                                        </button>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        html += '<td class="p-2 align-top"></td>';
+                    }
+                }
+                html += '</tr>';
+            }
+            scheduleBody.innerHTML = html;
+            lucide.createIcons(); // Render ikon Lucide
+        }
+
+        /** Mencari data jadwal */
+        function findScheduleEntry(kelas, hari, jam) {
+            const scheduleForClass = scheduleData[kelas] || [];
+            return scheduleForClass.find(entry => entry.day === hari && entry.time === jam);
+        }
+        
+        // --- FUNGSI JADWAL PIKET ---
+
+        /** Merender jadwal piket mingguan */
+        function renderDutySchedule() {
+            dutyScheduleGrid.innerHTML = '';
+
+            days.forEach(day => {
+                const duties = dutyScheduleData[day] || [];
+                let dutyHtml = '';
+                
+                duties.forEach(duty => {
+                    const kruList = duty.kru.map(kru => `<li class="text-xs text-gray-300 italic">${kru}</li>`).join('');
+                    dutyHtml += `
+                        <div class="p-3 rounded-lg border-l-4 ${duty.color} border-opacity-70">
+                            <p class="font-semibold text-sm text-gray-200 mb-1">${duty.post}</p>
+                            <ul class="list-disc list-inside ml-1">
+                                ${kruList}
+                            </ul>
+                        </div>
+                    `;
+                });
+
+                const cardHtml = `
+                    <div class="bg-gray-800 rounded-xl shadow-lg border border-gray-700">
+                        <div class="bg-galaxy-accent/20 p-3 rounded-t-xl border-b border-gray-700">
+                            <h3 class="text-lg font-bold text-galaxy-accent">${day}</h3>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            ${duties.length > 0 ? dutyHtml : '<p class="text-gray-400 text-sm italic">Tidak ada piket terjadwal.</p>'}
+                        </div>
+                    </div>
+                `;
+                dutyScheduleGrid.innerHTML += cardHtml;
+            });
+
+            // Tampilkan tombol kelola piket jika admin
+            if (currentUserRole === 'admin') {
+                editDutyScheduleButton.classList.remove('hidden');
+                // Mengganti alert dengan fungsi konfirmasi sederhana
+                editDutyScheduleButton.onclick = () => {
+                    if (confirm("Simulasi: Fitur kelola Jadwal Piket akan hadir di sini. Apakah Anda ingin melanjutkan simulasi?")) {
+                        console.log("Admin melanjutkan ke simulasi kelola Piket.");
+                    }
+                };
+            } else {
+                editDutyScheduleButton.classList.add('hidden');
+            }
+        }
+
+
+        // --- FUNGSI TAMPILAN (SPA) ---
+
+        const viewContainers = {
+            'login': loginContainer,
+            'schedule': scheduleContainer,
+            'duty-schedule': dutyScheduleContainer, 
+            'notifications': notificationsContainer,
+            'notes': notesContainer,
+            'user-management': userManagementContainer
+        };
+
+        /** Mengubah Tampilan Utama (SPA Logic) */
+        function showView(viewName) {
+            Object.values(viewContainers).forEach(container => container.classList.add('hidden'));
+            
+            const containerToShow = viewContainers[viewName];
+            if (containerToShow) {
+                containerToShow.classList.remove('hidden');
+            }
+
+            // Aksi spesifik saat mengganti view
+            if (viewName === 'schedule' && currentUserRole) {
+                renderSchedule(classSelector.value);
+            }
+            if (viewName === 'duty-schedule' && currentUserRole) { 
+                renderDutySchedule();
+            }
+            if (viewName === 'notifications') {
+                renderNotifications();
+            }
+            if (viewName === 'notes' && currentUserRole) {
+                // Catatan akan dirender oleh listener Firestore (subscribeToNotes)
+            }
+            if (viewName === 'user-management' && currentUserRole === 'admin') {
+                renderUserList();
+            }
+
+            // Update Nav Link Active State (Opsional)
+            $$('.nav-link').forEach(link => {
+                const linkView = link.dataset.view;
+                // Cek juga tombol Kelola User jika itu yang aktif
+                const isActive = (linkView === viewName) || (viewName === 'user-management' && link.id === 'manage-users-button');
+                
+                if (linkView === viewName) {
+                    link.classList.add('text-galaxy-accent', 'border-b-2', 'border-galaxy-accent');
+                    link.classList.remove('text-gray-400', 'border-b-0');
+                } else {
+                    link.classList.remove('text-galaxy-accent', 'border-b-2', 'border-galaxy-accent');
+                    link.classList.add('text-gray-400', 'border-b-0');
+                }
+            });
+            // Handle Kelola User button separately as it doesn't have the 'nav-link' class
+            if (viewName === 'user-management') {
+                manageUsersButton.classList.add('text-red-400', 'border-b-2', 'border-red-400');
+                manageUsersButton.classList.remove('text-gray-400', 'hover:text-red-400', 'border-b-0');
+            } else if (currentUserRole === 'admin') {
+                 manageUsersButton.classList.add('text-gray-400', 'hover:text-red-400');
+                 manageUsersButton.classList.remove('text-red-400', 'border-b-2', 'border-red-400');
+            }
+
+
+            lucide.createIcons(); // Pastikan ikon baru ter-render
+        }
+
+        // --- FUNGSI NOTIFIKASI ---
+
+        function renderNotifications() {
+            notificationsList.innerHTML = '';
+            staticNotifications.forEach(notif => {
+                let icon = 'info';
+                let color = 'bg-blue-900/50 border-blue-600';
+                
+                if (notif.type === 'success') {
+                    icon = 'check-circle';
+                    color = 'bg-green-900/50 border-green-600';
+                } else if (notif.type === 'warning') {
+                    icon = 'alert-triangle';
+                    color = 'bg-yellow-900/50 border-yellow-600';
+                }
+
+                notificationsList.innerHTML += `
+                    <div class="${color} p-4 rounded-xl border-l-4 shadow-md flex space-x-3">
+                        <i data-lucide="${icon}" class="w-5 h-5 mt-1 text-galaxy-accent flex-shrink-0"></i>
+                        <div>
+                            <p class="text-sm font-semibold text-gray-100">${notif.title}</p>
+                            <p class="text-xs text-gray-300 mt-1">${notif.content}</p>
+                            <p class="text-xs text-gray-500 mt-2 italic">Tanggal: ${notif.date}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+        }
+
+
+        // --- FUNGSI CATATAN PRIBADI (FIREBASE) ---
+
+        /** Mendapatkan path koleksi Catatan Pribadi */
+        function getNotesCollectionRef() {
+            return collection(db, 'artifacts', appId, 'users', userId, 'notes');
+        }
+
+        /** Berlangganan (Subscribe) ke Catatan Firestore */
+        function subscribeToNotes() {
+            if (!isAuthReady || !userId) return;
+
+            const notesQuery = query(getNotesCollectionRef());
+
+            // Real-time listener
+            onSnapshot(notesQuery, (snapshot) => {
+                notesLoading.classList.add('hidden');
+                notesError.classList.add('hidden');
+                
+                const notes = [];
+                snapshot.forEach(doc => {
+                    notes.push({ id: doc.id, ...doc.data() });
+                });
+                
+                renderNotesList(notes.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)));
+            }, (error) => {
+                console.error("Error fetching notes:", error);
+                notesLoading.textContent = "Gagal memuat catatan. Periksa koneksi atau izin.";
+                notesLoading.classList.remove('hidden');
+                notesError.textContent = "Error: " + error.message;
+                notesError.classList.remove('hidden');
+            });
+        }
+
+        /** Merender daftar catatan */
+        function renderNotesList(notes) {
+            notesList.innerHTML = '';
+            if (notes.length === 0) {
+                notesList.innerHTML = `<p class="md:col-span-2 text-center text-gray-500 py-10">Anda belum memiliki catatan. Klik "Buat Catatan Baru" di atas.</p>`;
+                return;
+            }
+
+            notes.forEach(note => {
+                const date = note.timestamp ? new Date(note.timestamp.seconds * 1000).toLocaleString('id-ID') : 'Tidak Diketahui';
+                notesList.innerHTML += `
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 flex flex-col justify-between">
+                        <div>
+                            <h4 class="text-lg font-bold text-galaxy-accent mb-2">${note.title}</h4>
+                            <p class="text-sm text-gray-300 line-clamp-4">${note.content}</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-gray-700 flex justify-between items-center">
+                            <span class="text-xs text-gray-500 italic">Diperbarui: ${date}</span>
+                            <div class="flex space-x-2">
+                                <button class="edit-note-btn text-cyan-400 hover:text-cyan-300" data-id="${note.id}" data-title="${note.title}" data-content="${note.content}">
+                                    <i data-lucide="square-pen" class="w-4 h-4"></i>
+                                </button>
+                                <button class="delete-note-btn text-red-400 hover:text-red-300" data-id="${note.id}">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            lucide.createIcons();
+
+            // Pasang event listener untuk tombol Catatan
+            $$('.edit-note-btn').forEach(btn => btn.addEventListener('click', (e) => openNoteModal(e.currentTarget.dataset)));
+            $$('.delete-note-btn').forEach(btn => btn.addEventListener('click', (e) => deleteNote(e.currentTarget.dataset.id)));
+        }
+
+        /** Membuka Modal Catatan */
+        function openNoteModal(data = {}) {
+            if (!currentUserRole) return; // Harus login
+
+            noteForm.reset();
+            currentNoteId = null;
+            
+            if (data.id) {
+                isEditingNote = true;
+                currentNoteId = data.id;
+                noteModalTitle.textContent = 'Edit Catatan';
+                noteTitleInput.value = data.title;
+                noteContentInput.value = data.content;
+                $('save-note-button').textContent = 'Perbarui Catatan';
+            } else {
+                isEditingNote = false;
+                noteModalTitle.textContent = 'Buat Catatan Baru';
+                $('save-note-button').textContent = 'Simpan Catatan';
+            }
+            noteModal.classList.remove('hidden');
+        }
+
+        /** Menutup Modal Catatan */
+        function closeNoteModal() {
+            noteModal.classList.add('hidden');
+            noteForm.reset();
+        }
+
+        /** Menyimpan atau Memperbarui Catatan */
+        async function handleNoteFormSubmit(event) {
+            event.preventDefault();
+
+            const title = noteTitleInput.value;
+            const content = noteContentInput.value;
+            
+            const noteData = {
+                title,
+                content,
+                timestamp: serverTimestamp(),
+                userId: userId // Simpan userId untuk keamanan
+            };
+
+            notesError.classList.add('hidden');
+            try {
+                if (isEditingNote && currentNoteId) {
+                    // Update
+                    await updateDoc(doc(getNotesCollectionRef(), currentNoteId), noteData);
+                } else {
+                    // Add New
+                    await addDoc(getNotesCollectionRef(), noteData);
+                }
+                closeNoteModal();
+            } catch (e) {
+                console.error("Error saving note: ", e);
+                notesError.textContent = 'Gagal menyimpan catatan. Coba lagi.';
+                notesError.classList.remove('hidden');
+            }
+        }
+
+        /** Menghapus Catatan */
+        async function deleteNote(id) {
+            // NOTE: Mengganti window.confirm() dengan fungsi konfirmasi sederhana
+            const isConfirmed = confirm('Apakah Anda yakin ingin menghapus catatan ini?');
+            if (isConfirmed) {
+                try {
+                    await deleteDoc(doc(getNotesCollectionRef(), id));
+                } catch (e) {
+                    console.error("Error deleting note: ", e);
+                    notesError.textContent = 'Gagal menghapus catatan. Coba lagi.';
+                    notesError.classList.remove('hidden');
+                }
+            }
+        }
+
+        // --- FUNGSI KELOLA USER (ADMIN) ---
+
+        /** Merender daftar user (Admin) */
+        function renderUserList() {
+            const userListBody = $('user-list-body');
+            userListBody.innerHTML = '';
+            
+            // Loop melalui data simulasi
+            for (const username in simulatedUserData) {
+                const user = simulatedUserData[username];
+                if (user.role === 'admin') continue; // Jangan tampilkan admin di daftar
+
+                let statusClass, statusText;
+                if (user.status === 'approved') {
+                    statusClass = 'bg-green-700 text-green-300';
+                    statusText = 'Diotorisasi';
+                } else if (user.status === 'pending') {
+                    statusClass = 'bg-yellow-700 text-yellow-300';
+                    statusText = 'Menunggu Validasi';
+                } else {
+                    statusClass = 'bg-gray-700 text-gray-400';
+                    statusText = 'Tidak Diketahui';
+                }
+                
+                let actionsHtml;
+                if (user.status === 'pending') {
+                    actionsHtml = `
+                        <button class="approve-btn bg-green-500 text-gray-900 px-2 py-1 rounded-lg text-xs font-bold hover:bg-green-600 transition-colors duration-200" data-username="${username}">Setujui</button>
+                        <button class="delete-btn bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 ml-2 transition-colors duration-200" data-username="${username}">Tolak & Hapus</button>
+                    `;
+                } else { // Approved
+                    actionsHtml = `
+                        <button class="delete-btn bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 transition-colors duration-200" data-username="${username}">Hapus Akun</button>
+                    `;
+                }
+
+                userListBody.innerHTML += `
+                    <tr class="hover:bg-gray-800 transition-colors duration-150">
+                        <td class="p-3 text-sm text-gray-300 font-mono">${username}</td>
+                        <td class="p-3 text-sm text-gray-300">Anggota Kru</td>
+                        <td class="p-3"><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span></td>
+                        <td class="p-3 text-sm">${actionsHtml}</td>
+                    </tr>
+                `;
+            }
+
+            // Tambahkan listener untuk aksi admin
+            $$('.approve-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                const username = e.target.dataset.username;
+                // Mengganti window.confirm()
+                if (confirm(`Yakin menyetujui akses untuk ${username}?`)) {
+                    simulatedUserData[username].status = 'approved';
+                    renderUserList(); // Render ulang setelah update
+                }
+            }));
+            $$('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                const username = e.target.dataset.username;
+                // Mengganti window.confirm()
+                if (confirm(`PERINGATAN: Apakah Anda yakin ingin MENGHAPUS akun ${username}?`)) {
+                    delete simulatedUserData[username];
+                    renderUserList(); // Render ulang setelah delete
+                }
+            }));
+            lucide.createIcons();
+        }
+
+        // --- FUNGSI LOGIN, LOGOUT & UI ---
+
+        /** Menangani proses login */
+        function handleLogin(event) {
+            event.preventDefault();
+            const username = usernameInput.value;
+            const password = passwordInput.value;
+
+            loginError.classList.add('hidden');
+            const user = simulatedUserData[username];
+
+            if (user && user.pass === password) {
+                if (user.status === 'approved') {
+                    currentUserRole = user.role;
+                    welcomeMessage.textContent = `Selamat datang, ${currentUserRole === 'admin' ? 'Komandan Admin' : 'Anggota Kru'}`;
+                    showMainAppUI();
+                    showView('schedule');
+                } else if (user.status === 'pending') {
+                    loginError.textContent = 'Akses Anda sedang menunggu otorisasi Komandan Admin.';
+                    loginError.classList.remove('hidden');
+                }
+            } else {
+                loginError.textContent = 'Kode Identitas atau Kunci Akses tidak valid. Coba lagi.';
+                loginError.classList.remove('hidden');
+            }
+        }
+
+        /** Menampilkan UI Aplikasi Utama setelah Login */
+        function showMainAppUI() {
+            // Tampilkan tombol logout
+            logoutButton.classList.remove('hidden');
+            mobileLogoutButton.classList.remove('hidden');
+            welcomeMessage.classList.remove('hidden');
+            
+            // Logika Visibilitas Admin Tools
+            if (currentUserRole === 'admin') {
+                addScheduleButton.classList.remove('hidden');
+                manageUsersButton.classList.remove('hidden');
+                editDutyScheduleButton.classList.remove('hidden');
+            } else {
+                addScheduleButton.classList.add('hidden');
+                manageUsersButton.classList.add('hidden');
+                editDutyScheduleButton.classList.add('hidden');
+            }
+
+            // Mulai mendengarkan Catatan Pribadi
+            subscribeToNotes();
+            
+            // Render Jadwal awal
+            renderSchedule(classSelector.value);
+        }
+
+        /** Menangani proses logout (FITUR UTAMA) */
+        async function handleLogout() {
+            console.log("Logout function triggered.");
+            try {
+                // Opsional: Sign out dari Firebase Auth
+                if (auth.currentUser) {
+                     await auth.signOut();
+                     console.log("Firebase signed out.");
+                }
+            } catch (e) {
+                console.error("Error signing out:", e);
+            }
+            // Reset peran dan tampilkan layar login
+            currentUserRole = null;
+            showLoginScreen();
+            console.log("Application reset to login screen.");
+        }
+
+        /** Menampilkan layar login */
+        function showLoginScreen() {
+            Object.values(viewContainers).forEach(container => container.classList.add('hidden'));
+            loginContainer.classList.remove('hidden');
+
+            // Sembunyikan item header setelah logout
+            logoutButton.classList.add('hidden');
+            mobileLogoutButton.classList.add('hidden');
+            welcomeMessage.classList.add('hidden');
+            manageUsersButton.classList.add('hidden');
+
+            loginError.classList.add('hidden');
+            loginForm.reset();
+        }
+
+
+        // --- INISIALISASI & EVENT LISTENERS ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 1. Inisialisasi Firebase & Auth
+            initFirebaseAndAuth();
+
+            // 2. Generate data simulasi
+            generateInitialScheduleData();
+            populateClassDropdown();
+
+            // 3. Listener Navigasi Utama
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (currentUserRole) {
+                        showView(e.currentTarget.dataset.view); 
+                    }
+                });
+            });
+            
+            // 3a. Listener Tambahan untuk elemen home, user management, dan back button
+            if (homeLink) {
+                homeLink.addEventListener('click', () => {
+                    if (currentUserRole) {
+                        showView('schedule');
+                    } else {
+                        showLoginScreen();
+                    }
+                });
+            }
+
+            // Tambahkan listener untuk tombol Kelola User (yang tidak punya class 'nav-link')
+            if (manageUsersButton) {
+                manageUsersButton.addEventListener('click', () => {
+                    if (currentUserRole === 'admin') {
+                        showView('user-management');
+                    }
+                });
+            }
+
+            if (backToScheduleBtn) {
+                backToScheduleBtn.addEventListener('click', () => showView('schedule'));
+            }
+
+
+            // 4. Listener Login/Logout (PENGHUBUNG UTAMA)
+            loginForm.addEventListener('submit', handleLogin);
+            logoutButton.addEventListener('click', handleLogout);
+            mobileLogoutButton.addEventListener('click', handleLogout);
+            
+            // 5. Listener Jadwal (Pergantian Kelas)
+            classSelector.addEventListener('change', (event) => {
+                if (currentUserRole) {
+                    renderSchedule(event.target.value); 
+                }
+            });
+
+            // 6. Listener Catatan Pribadi
+            addNoteButton.addEventListener('click', () => openNoteModal());
+            noteForm.addEventListener('submit', handleNoteFormSubmit);
+            $('cancel-note-button').addEventListener('click', closeNoteModal);
+
+            // 7. Listener Modal Jadwal (Simulasi CRUD)
+            addScheduleButton.addEventListener('click', () => {
+                // Mengganti alert dengan fungsi konfirmasi sederhana
+                if (confirm("Simulasi: Admin dapat menambah jadwal di sini. Lanjutkan?")) {
+                    console.log("Admin melanjutkan ke simulasi tambah jadwal.");
+                }
+            });
+
+            // 8. Listener Ikon Lucide (untuk ikon yang dimuat setelah DOMContentLoaded)
+            lucide.createIcons();
+
+        });
+    </script>
+
+</body>
+</html>
