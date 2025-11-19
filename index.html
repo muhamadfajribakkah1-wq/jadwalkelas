@@ -91,18 +91,22 @@
                     <button class="nav-link text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" data-view="duty-schedule">
                         Jadwal Piket
                     </button>
-                    <!-- Akhir Navigasi Baru -->
+                    <!-- Navigasi Akun/Admin -->
+                    <span id="welcome-message" class="text-sm text-gray-400 hidden"></span>
+                    
+                    <!-- Tombol Kelola User (Hanya Admin) -->
+                    <button id="manage-users-button" class="text-gray-400 hover:text-red-400 px-3 py-2 rounded-md text-sm font-medium hidden transition-colors duration-200 flex items-center space-x-1" data-view="user-management">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        <span>Kelola User</span>
+                    </button>
+
                     <button class="nav-link text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" data-view="notifications">
                         Notifikasi
                     </button>
                     <button class="nav-link text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200" data-view="notes">
                         Catatan Pribadi
                     </button>
-                    <!-- Navigasi Akun/Admin -->
-                    <span id="welcome-message" class="text-sm text-gray-400 hidden"></span>
-                    <button id="manage-users-button" class="text-gray-400 hover:text-galaxy-accent px-3 py-2 rounded-md text-sm font-medium hidden transition-colors duration-200">
-                        Kelola User
-                    </button>
+                    
                     <button id="logout-button" class="bg-red-600 text-white px-3 py-2 rounded-xl text-sm font-medium hover:bg-red-700 shadow-lg hidden transition-colors duration-200">
                         Logout
                     </button>
@@ -144,8 +148,9 @@
             <div class="mt-6 text-center text-xs text-gray-400">
                 <p>Admin: <code class="bg-gray-700 p-1 rounded">admin123</code> / <code class="bg-gray-700 p-1 rounded">admin123</code></p>
                 <p class="mt-1">User: <code class="bg-gray-700 p-1 rounded">user123</code> / <code class="bg-gray-700 p-1 rounded">user123</code></p>
+                <p class="mt-1">Pending: <code class="bg-gray-700 p-1 rounded">pendinguser</code> / <code class="bg-gray-700 p-1 rounded">pending123</code></p>
             </div>
-            <p class="mt-4 text-center text-sm">Belum terdaftar? <a href="#" id="show-register-link" class="font-medium text-galaxy-accent hover:text-galaxy-accent-hover">Daftar Akun Kapsul</a></p>
+            <p class="mt-4 text-center text-sm">Belum terdaftar? <a href="#" id="show-register-link" class="font-medium text-galaxy-accent hover:text-galaxy-accent-hover">Daftar Akun Kapsul (Simulasi)</a></p>
         </div>
     </div>
 
@@ -199,7 +204,7 @@
         </div>
     </main>
 
-    <!-- KONTENER JADWAL PIKET (BARU) -->
+    <!-- KONTENER JADWAL PIKET -->
     <div id="duty-schedule-container" class="flex-grow hidden p-4 sm:p-6 lg:p-8">
         <div class="max-w-7xl mx-auto">
             <div class="bg-galaxy-secondary rounded-xl shadow-2xl overflow-hidden border border-cyan-800/50">
@@ -264,20 +269,23 @@
     <!-- KONTENER KELOLA USER (ADMIN) -->
     <div id="user-management-container" class="flex-grow hidden p-4 sm:p-6 lg:p-8">
         <div class="w-full max-w-5xl mx-auto bg-galaxy-secondary rounded-xl shadow-2xl border border-cyan-800/50 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-semibold text-galaxy-accent">Kelola Pengguna Sistem</h2>
+            <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                <h2 class="text-2xl font-semibold text-red-400 flex items-center space-x-2">
+                    <i data-lucide="shield-alert" class="w-7 h-7"></i>
+                    <span>Panel Kendali Otorisasi Kru</span>
+                </h2>
                 <button id="back-to-schedule-btn" class="bg-galaxy-accent text-galaxy-primary px-3 py-2 rounded-xl text-sm font-bold hover:bg-galaxy-accent-hover transition-colors duration-200">
                     &larr; Kembali ke Jadwal
                 </button>
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full">
-                    <thead class="bg-galaxy-primary">
+                <table class="w-full min-w-max">
+                    <thead class="bg-galaxy-primary sticky top-0">
                         <tr>
-                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Kode Identitas</th>
+                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Kode Identitas (Username)</th>
                             <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Level Akses</th>
                             <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Status Otorisasi</th>
-                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Aksi</th>
+                            <th class="p-3 text-left text-xs sm:text-sm font-semibold text-gray-400 uppercase tracking-wider">Aksi Kendali</th>
                         </tr>
                     </thead>
                     <tbody id="user-list-body" class="bg-galaxy-secondary divide-y divide-gray-700">
@@ -296,7 +304,7 @@
         </div>
     </footer>
 
-    <!-- MODAL (TAMBAH/EDIT JADWAL & CATATAN) -->
+    <!-- MODAL (TAMBAH/EDIT JADWAL) -->
     <div id="schedule-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden p-4">
         <!-- ... Jadwal Modal Content ... -->
         <div class="bg-galaxy-secondary rounded-xl shadow-2xl w-full max-w-lg p-6 border border-cyan-800/50">
@@ -336,6 +344,7 @@
         </div>
     </div>
     
+    <!-- MODAL CATATAN PRIBADI -->
     <div id="note-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 hidden p-4">
         <!-- ... Catatan Modal Content ... -->
         <div class="bg-galaxy-secondary rounded-xl shadow-2xl w-full max-w-md p-6 border border-cyan-800/50">
@@ -367,7 +376,7 @@
         // Firebase Imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, setLogLevel, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, setLogLevel, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global Variables
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -421,11 +430,13 @@
         // 2. Data Jadwal Utama per Kelas
         let scheduleData = {}; 
 
-        // 3. Database User (SIMULASI UNTUK LOGIN)
+        // 3. Database User (SIMULASI UNTUK LOGIN & KELOLA USER)
         let simulatedUserData = {
             'admin123': { pass: 'admin123', role: 'admin', status: 'approved' },
             'user123': { pass: 'user123', role: 'user', status: 'approved' },
-            'pendinguser': { pass: 'pending123', role: 'user', status: 'pending' }
+            'pendinguser': { pass: 'pending123', role: 'user', status: 'pending' },
+            'baru_daftar': { pass: 'rahasia', role: 'user', status: 'pending' },
+            'kru_senior': { pass: 'seniorkru', role: 'user', status: 'approved' },
         };
         
         // 4. Slot Waktu dan Hari
@@ -448,7 +459,7 @@
             { id: 3, title: 'Selamat Datang Kembali!', content: 'Kami menyambut seluruh kru dan siswa SMANIDA untuk tahun akademik baru.', type: 'info', date: '2025-11-01' },
         ];
 
-        // 6. Data Jadwal Piket (BARU)
+        // 6. Data Jadwal Piket
         const dutyScheduleData = {
             'Senin': [
                 { post: 'Petugas Upacara', kru: ['Siswa XII-A', 'Siswa XII-B', 'Siswa XI-C'], color: 'bg-red-800' },
@@ -482,15 +493,15 @@
         const $ = (id) => document.getElementById(id);
         const $$ = (selector) => document.querySelectorAll(selector);
 
-        // Containers (UPDATE: Tambah duty-schedule-container)
+        // Containers
         const loadingScreen = $('loading-screen');
         const loginContainer = $('login-container');
         const scheduleContainer = $('schedule-container');
-        const dutyScheduleContainer = $('duty-schedule-container'); // BARU
+        const dutyScheduleContainer = $('duty-schedule-container'); 
         const notificationsContainer = $('notifications-container');
         const notesContainer = $('notes-container');
-        const userManagementContainer = $('user-management-container');
-        
+        const userManagementContainer = $('user-management-container'); // BARU
+
         // Login/Register
         const loginForm = $('login-form');
         const usernameInput = $('username');
@@ -513,7 +524,7 @@
         const scheduleTitle = $('schedule-title');
         const addScheduleButton = $('add-schedule-button');
         
-        // Duty Schedule (BARU)
+        // Duty Schedule
         const dutyScheduleGrid = $('duty-schedule-grid');
         const editDutyScheduleButton = $('edit-duty-schedule-button');
 
@@ -677,7 +688,7 @@
             return scheduleForClass.find(entry => entry.day === hari && entry.time === jam);
         }
         
-        // --- FUNGSI JADWAL PIKET (BARU) ---
+        // --- FUNGSI JADWAL PIKET ---
 
         /** Merender jadwal piket mingguan */
         function renderDutySchedule() {
@@ -727,7 +738,7 @@
         const viewContainers = {
             'login': loginContainer,
             'schedule': scheduleContainer,
-            'duty-schedule': dutyScheduleContainer, // BARU
+            'duty-schedule': dutyScheduleContainer, 
             'notifications': notificationsContainer,
             'notes': notesContainer,
             'user-management': userManagementContainer
@@ -746,7 +757,7 @@
             if (viewName === 'schedule' && currentUserRole) {
                 renderSchedule(classSelector.value);
             }
-            if (viewName === 'duty-schedule' && currentUserRole) { // BARU
+            if (viewName === 'duty-schedule' && currentUserRole) { 
                 renderDutySchedule();
             }
             if (viewName === 'notifications') {
@@ -760,8 +771,11 @@
             }
 
             // Update Nav Link Active State (Opsional)
-            navLinks.forEach(link => {
+            $$('.nav-link').forEach(link => {
                 const linkView = link.dataset.view;
+                // Cek juga tombol Kelola User jika itu yang aktif
+                const isActive = (linkView === viewName) || (viewName === 'user-management' && link.id === 'manage-users-button');
+                
                 if (linkView === viewName) {
                     link.classList.add('text-galaxy-accent', 'border-b-2', 'border-galaxy-accent');
                     link.classList.remove('text-gray-400', 'border-b-0');
@@ -770,6 +784,15 @@
                     link.classList.add('text-gray-400', 'border-b-0');
                 }
             });
+            // Handle Kelola User button separately as it doesn't have the 'nav-link' class
+            if (viewName === 'user-management') {
+                manageUsersButton.classList.add('text-red-400', 'border-b-2', 'border-red-400');
+                manageUsersButton.classList.remove('text-gray-400', 'hover:text-red-400', 'border-b-0');
+            } else if (currentUserRole === 'admin') {
+                 manageUsersButton.classList.add('text-gray-400', 'hover:text-red-400');
+                 manageUsersButton.classList.remove('text-red-400', 'border-b-2', 'border-red-400');
+            }
+
 
             lucide.createIcons(); // Pastikan ikon baru ter-render
         }
@@ -936,7 +959,9 @@
 
         /** Menghapus Catatan */
         async function deleteNote(id) {
-            if (confirm("Apakah Anda yakin ingin menghapus catatan ini?")) {
+            // NOTE: Mengganti window.confirm() dengan simulasi karena alert/confirm dilarang
+            const isConfirmed = confirm('Apakah Anda yakin ingin menghapus catatan ini?');
+            if (isConfirmed) {
                 try {
                     await deleteDoc(doc(getNotesCollectionRef(), id));
                 } catch (e) {
@@ -947,8 +972,71 @@
             }
         }
 
+        // --- FUNGSI KELOLA USER (ADMIN) ---
 
-        // --- FUNGSI LOGIN, REGISTER, & UI LAMA YANG DIMODIFIKASI ---
+        /** Merender daftar user (Admin) */
+        function renderUserList() {
+            const userListBody = $('user-list-body');
+            userListBody.innerHTML = '';
+            
+            // Loop melalui data simulasi
+            for (const username in simulatedUserData) {
+                const user = simulatedUserData[username];
+                if (user.role === 'admin') continue; // Jangan tampilkan admin di daftar
+
+                let statusClass, statusText;
+                if (user.status === 'approved') {
+                    statusClass = 'bg-green-700 text-green-300';
+                    statusText = 'Diotorisasi';
+                } else if (user.status === 'pending') {
+                    statusClass = 'bg-yellow-700 text-yellow-300';
+                    statusText = 'Menunggu Validasi';
+                } else {
+                    statusClass = 'bg-gray-700 text-gray-400';
+                    statusText = 'Tidak Diketahui';
+                }
+                
+                let actionsHtml;
+                if (user.status === 'pending') {
+                    actionsHtml = `
+                        <button class="approve-btn bg-green-500 text-gray-900 px-2 py-1 rounded-lg text-xs font-bold hover:bg-green-600 transition-colors duration-200" data-username="${username}">Setujui</button>
+                        <button class="delete-btn bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 ml-2 transition-colors duration-200" data-username="${username}">Tolak & Hapus</button>
+                    `;
+                } else { // Approved
+                    actionsHtml = `
+                        <button class="delete-btn bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 transition-colors duration-200" data-username="${username}">Hapus Akun</button>
+                    `;
+                }
+
+                userListBody.innerHTML += `
+                    <tr class="hover:bg-gray-800 transition-colors duration-150">
+                        <td class="p-3 text-sm text-gray-300 font-mono">${username}</td>
+                        <td class="p-3 text-sm text-gray-300">Anggota Kru</td>
+                        <td class="p-3"><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span></td>
+                        <td class="p-3 text-sm">${actionsHtml}</td>
+                    </tr>
+                `;
+            }
+
+            // Tambahkan listener untuk aksi admin
+            $$('.approve-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                const username = e.target.dataset.username;
+                if (confirm(`Yakin menyetujui akses untuk ${username}?`)) {
+                    simulatedUserData[username].status = 'approved';
+                    renderUserList(); // Render ulang setelah update
+                }
+            }));
+            $$('.delete-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                const username = e.target.dataset.username;
+                if (confirm(`PERINGATAN: Apakah Anda yakin ingin MENGHAPUS akun ${username}?`)) {
+                    delete simulatedUserData[username];
+                    renderUserList(); // Render ulang setelah delete
+                }
+            }));
+            lucide.createIcons();
+        }
+
+        // --- FUNGSI LOGIN, LOGOUT & UI ---
 
         /** Menangani proses login */
         function handleLogin(event) {
@@ -980,13 +1068,16 @@
             logoutButton.classList.remove('hidden');
             mobileLogoutButton.classList.remove('hidden');
             welcomeMessage.classList.remove('hidden');
-
+            
+            // Logika Visibilitas Admin Tools
             if (currentUserRole === 'admin') {
                 addScheduleButton.classList.remove('hidden');
                 manageUsersButton.classList.remove('hidden');
+                editDutyScheduleButton.classList.remove('hidden');
             } else {
                 addScheduleButton.classList.add('hidden');
                 manageUsersButton.classList.add('hidden');
+                editDutyScheduleButton.classList.add('hidden');
             }
 
             // Mulai mendengarkan Catatan Pribadi
@@ -999,13 +1090,14 @@
         /** Menangani proses logout */
         async function handleLogout() {
             try {
-                // Opsional: Sign out dari Firebase jika perlu, tapi menjaga auth token tetap aktif
-                // await auth.signOut(); 
+                // Hapus peran dan id lokal
+                currentUserRole = null;
+                userId = null;
+                // Sign out dari Firebase (opsional, tapi disarankan)
+                await auth.signOut();
             } catch (e) {
                 console.error("Error signing out:", e);
             }
-            currentUserRole = null;
-            userId = null;
             showLoginScreen();
         }
 
@@ -1025,48 +1117,6 @@
             passwordInput.value = '';
         }
 
-        /** Merender daftar user (Admin) */
-        function renderUserList() {
-            // Logika render user list (tetap menggunakan data simulasi untuk demo)
-            // (Logika ini akan sangat berbeda jika menggunakan Firestore)
-            const userListBody = $('user-list-body');
-            userListBody.innerHTML = '';
-            
-            for (const username in simulatedUserData) {
-                const user = simulatedUserData[username];
-                if (user.role === 'admin') continue;
-
-                let statusClass = user.status === 'approved' ? 'bg-green-700 text-green-300' : 'bg-yellow-700 text-yellow-300';
-                let statusText = user.status === 'approved' ? 'Diotorisasi' : 'Menunggu Validasi';
-                
-                let actionsHtml = user.status === 'pending' ? `
-                    <button class="approve-btn bg-green-500 text-gray-900 px-2 py-1 rounded-lg text-xs font-bold hover:bg-green-600 transition-colors duration-200" data-username="${username}">Setujui</button>
-                    <button class="reject-btn bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 ml-1 transition-colors duration-200" data-username="${username}">Tolak</button>
-                ` : `
-                    <button class="reject-btn bg-red-500 text-white px-2 py-1 rounded-lg text-xs font-bold hover:bg-red-600 ml-1 transition-colors duration-200" data-username="${username}">Hapus</button>
-                `;
-
-                userListBody.innerHTML += `
-                    <tr class="hover:bg-gray-800 transition-colors duration-150">
-                        <td class="p-3 text-sm text-gray-300">${username}</td>
-                        <td class="p-3 text-sm text-gray-300">Anggota Kru</td>
-                        <td class="p-3"><span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${statusText}</span></td>
-                        <td class="p-3 text-sm">${actionsHtml}</td>
-                    </tr>
-                `;
-            }
-
-            // Tambahkan listener untuk aksi admin (approve/reject/delete)
-            $$('.approve-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                simulatedUserData[e.target.dataset.username].status = 'approved';
-                renderUserList();
-            }));
-            $$('.reject-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                delete simulatedUserData[e.target.dataset.username];
-                renderUserList();
-            }));
-        }
-
 
         // --- INISIALISASI & EVENT LISTENERS ---
 
@@ -1083,11 +1133,11 @@
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     if (currentUserRole) {
-                        showView(e.currentTarget.dataset.view); // Gunakan currentTarget untuk mendapatkan data-view dari tombol
+                        showView(e.currentTarget.dataset.view); 
                     }
                 });
             });
-
+            
             // 3a. Listener Tambahan untuk elemen home, user management, dan back button
             if (homeLink) {
                 homeLink.addEventListener('click', () => {
@@ -1099,8 +1149,13 @@
                 });
             }
 
+            // Tambahkan listener untuk tombol Kelola User (yang tidak punya class 'nav-link')
             if (manageUsersButton) {
-                manageUsersButton.addEventListener('click', () => showView('user-management'));
+                manageUsersButton.addEventListener('click', () => {
+                    if (currentUserRole === 'admin') {
+                        showView('user-management');
+                    }
+                });
             }
 
             if (backToScheduleBtn) {
@@ -1116,7 +1171,7 @@
             // 5. Listener Jadwal (Pergantian Kelas)
             classSelector.addEventListener('change', (event) => {
                 if (currentUserRole) {
-                    showView('schedule'); // Paksa render ulang view schedule dengan kelas baru
+                    renderSchedule(event.target.value); 
                 }
             });
 
@@ -1127,7 +1182,6 @@
 
             // 7. Listener Modal Jadwal (Simulasi CRUD)
             addScheduleButton.addEventListener('click', () => {
-                // Logika modal jadwal (disederhanakan)
                 alert("Simulasi: Admin dapat menambah jadwal di sini.");
             });
 
